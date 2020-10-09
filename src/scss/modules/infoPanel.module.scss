@@ -1,0 +1,117 @@
+@charset 'UTF-8';
+
+@import '../variables';
+
+.container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: flex-start;
+  padding: 8px;
+  width: 480px;
+  max-height: 100%;
+  overflow: auto;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.icon {
+  position: absolute;
+  top: $icon-button-margin;
+  left: $icon-button-margin;
+  opacity: 0.8;
+  z-index: 1;
+}
+
+.panel {
+  padding: 28px 20px;
+  width: 100%;
+  max-height: 100%;
+  background-color: rgba(255, 255, 255, 0.94);
+  border-radius: 5px;
+  box-shadow: 0 1px 3px 1px rgba(0, 0, 0, 0.05);
+  overflow: auto;
+  visibility: hidden;
+  opacity: 0;
+  transition: visibility 0.1s ease-in, opacity 0.1s ease-in;
+  pointer-events: auto;
+
+  &:global(.show) {
+    visibility: visible;
+    opacity: 1;
+  }
+
+}
+.col {
+  display: flex;
+  flex-direction: column;
+  &:not(:first-of-type) {
+    margin-top: 6px;
+  }
+}
+.row {
+  @extend .col;
+  flex-direction: row;
+  align-items: center;
+}
+.label {
+  margin-bottom: 6px;
+  width: 100px;
+  min-width: 100px;
+  font-size: 1.1rem;
+  color: #6d6d6d;
+  display: inline-block;
+  text-align: right;
+  white-space: nowrap;
+  &::after {
+    content: '：';
+  }
+  :local(.row) & {
+    margin-bottom: 0;
+  }
+  &:global(.auto-width) {
+    width: auto;
+    min-width: auto;
+  }
+}
+.value {
+  font-size: 1.4rem;
+  padding-right: 20px;
+  padding-left: 40px;
+  display: inline-block;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  :local(.row) & {
+    width: 100%;
+    padding-left: 8px;
+  }
+}
+input[type="text"] {
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  outline: none;
+  background: none;
+  -moz-appearance: none;
+  -webkit-appearance: none;
+  appearance: none;
+  font-family: inherit;
+  color: inherit;
+}
+.readonly {
+  width: 100%;
+  // padding: 0 4px;
+  font-size: 1.4rem;
+  color: #434343;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media screen and (max-width: 480px) {
+  .container {
+    position: fixed;
+    width: 100%;
+  }
+}

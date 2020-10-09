@@ -1,0 +1,26 @@
+{
+  "short_name": "VRM Viewer",
+  "name": "VRM Viewer",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "icon_192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon_512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#509bf7",
+  "background_color": "#ffffff",
+  "lang": "ja"
+}

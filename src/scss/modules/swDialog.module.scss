@@ -1,0 +1,66 @@
+@charset 'UTF-8';
+
+@import '../variables';
+
+.panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  width: 320px;
+  background-color: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 1px 32px 8px rgba(0,0,0,.05);
+  overflow: hidden;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  background-color: #ffffff;
+  visibility: hidden;
+  opacity: 0;
+  transition: all 0.1s ease-in;
+  &:global(.active) {
+    visibility: visible;
+    opacity: 0.6;
+  }
+}
+
+.title {
+  padding: 24px 24px 0;
+  width: 100%;
+  text-align: center;
+  font-size: 1.7rem;
+  font-weight: bold;
+  color: #343434;
+  white-space: pre-wrap;
+  user-select: none;
+}
+
+.body {
+  padding: 12px 18px 20px;
+  line-height: 1.4;
+  text-align: center;
+  font-size: 1.3rem;
+  color: #343434;
+}
+
+.button {
+  display: flex;
+  padding: 10px;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  border-top: 1px solid #e6e6e6;
+  font-size: 1.7rem;
+  font-weight: bold;
+  color: #40a5fb;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color:transparent; 
+}

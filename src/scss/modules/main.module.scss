@@ -1,0 +1,29 @@
+@charset 'UTF-8';
+
+@import '../variables';
+
+.main {
+  width: 100%;
+  height: 100%;
+}
+
+.canvas-container {
+  width: 100%;
+  height: 100%;
+  background-color: #e3f4ff;
+  outline: none;
+}
+
+// .dock {
+//   position: fixed;
+//   top: 0;
+//   right: 0;
+//   padding: 10px;
+//   padding-right: calc(env(safe-area-inset-right) + 10px);
+// }
+
+@media screen and (max-width: 480px) {
+  // .main {
+  //   padding-bottom: $sp-menu-height;
+  // }
+}

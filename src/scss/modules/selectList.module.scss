@@ -1,0 +1,32 @@
+@charset 'UTF-8';
+
+@import '../variables';
+
+.container {
+  overflow: auto;
+}
+.list {
+  max-height: 100%;
+  width: 100%;
+}
+.item {
+  padding: 0 16px;
+  height: 48px;
+  width: 100%;
+  line-height: 48px;
+  font-size: 1.7rem;
+  text-align: center;
+  color: #3d3d3d;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  // background-color: rgba(255, 255, 255, 0.5);
+  &:global(.selected) {
+    background-color: rgba(187, 197, 214, 0.5);
+    box-shadow: 0 1px 3px 1px rgba(0, 0, 0, 0.05);
+  }
+}
+
+@media screen and (max-width: 480px) {
+}
