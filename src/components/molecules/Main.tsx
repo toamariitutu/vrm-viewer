@@ -98,10 +98,8 @@ const Main = ({ className }: Props) => {
   return (
     <>
       <div
-        onMouseDown={isMobile ? undefined : handleMouseDown}
-        onMouseUp={isMobile ? undefined : handleMouseUp}
-        onTouchStart={isMobile ? handleMouseDown : undefined}
-        onTouchEnd={isMobile ? handleMouseUp : undefined}
+        onPointerDown={handleMouseDown}
+        onPointerUp={handleMouseUp}
         onDragOver={acceptDnD(currentMode, handleDragOver)}
         onDrop={acceptDnD(currentMode, handleDrop)}
         className={`${styles.main} ${className || ''}`}
