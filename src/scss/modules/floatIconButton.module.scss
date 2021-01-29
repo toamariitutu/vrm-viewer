@@ -1,0 +1,32 @@
+
+@import '../fontawesome/fontawesome.scss';
+@import '../fontawesome/solid.scss';
+@import '../variables';
+
+.icon {
+  height: 36px;
+  width: 36px;
+  padding: 0;
+  border-radius: 50%;
+  background-color: $primary-color;
+  box-shadow: 0 1px 3px 1px rgba(0, 0, 0, 0.05);
+  opacity: 0.8;
+  z-index: 1;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+  @extend %fa-icon;
+  @extend .fas;
+  &:before {
+    position: relative;
+    font-size: 1.6rem;
+    color: #ffffff;
+  }
+  &:global(.info):before {
+    content: fa-content($fa-var-info);
+    font-size: 1.8rem;
+  }
+  &:global(.hide):before {
+    content: fa-content($fa-var-eye-slash);
+  }
+}

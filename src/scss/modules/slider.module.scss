@@ -1,4 +1,4 @@
-@charset 'UTF-8';
+@import '../variables';
 
 .slider {
   display: block;
@@ -51,7 +51,7 @@ input[type="range"]::-webkit-slider-thumb {
 input[type="range"]::-moz-range-thumb {
   height: 30px;
   width: 30px;
-  background: #509bf7;
+  background: $primary-color;
   cursor: pointer;
   margin-top: -12px;
   border-radius: 15px;
@@ -62,7 +62,7 @@ input[type="range"]::-moz-range-thumb {
 input[type="range"]::-ms-thumb {
   height: 30px;
   width: 30px;
-  background: #509bf7;
+  background: $primary-color;
   cursor: pointer;
   margin-top: -12px;
   border-radius: 15px;
@@ -75,12 +75,12 @@ input[type="range"]::-webkit-slider-runnable-track {
   width: 100%;
   height: 8px;
   cursor: pointer;
-  background: #509bf7;
+  background: $primary-color;
   border-radius: 4px;
 }
 
 input[type="range"]:active::-webkit-slider-runnable-track {
-  background: #509bf7;
+  background: $primary-color;
 }
 
 input[type="range"]::-moz-range-track {

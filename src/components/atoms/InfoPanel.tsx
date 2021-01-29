@@ -1,10 +1,9 @@
 import React, { useContext, useCallback, useEffect } from 'react'
 import { VRMSchema } from '@pixiv/three-vrm'
-import IconButton from 'components/atoms/IconButton'
+import FloatIconButton from 'components/atoms/FloatIconButton'
 import styles from 'scss/modules/infoPanel.module.scss'
 import { VrmManagerContext, InfoPanelContext, MenuModeContext } from 'contexts'
 import { Mode } from 'components/molecules/Menu'
-import infoIcon from 'assets/images/icon_info.svg'
 
 type Dict<T extends string> = {
   [key in T]: string
@@ -52,8 +51,8 @@ const InfoPanel = () => {
   }, [setShown, shown, setMenuMode])
   return (
     <div className={styles.container}>
-      <IconButton
-        icon={infoIcon}
+      <FloatIconButton
+        iconType="info"
         label="info"
         className={styles.icon}
         onClick={handleClickIcon}
