@@ -4,9 +4,8 @@ import Main from 'components/molecules/Main'
 import Menu from 'components/molecules/Menu'
 import Panel from 'components/molecules/Panel'
 import InfoPanel from 'components/atoms/InfoPanel'
-import IconButton from 'components/atoms/IconButton'
+import FloatIconButton from 'components/atoms/FloatIconButton'
 import 'scss/App.scss'
-import hideIcon from 'assets/images/icon_hide.svg'
 import { UIContext } from 'contexts'
 
 // Windowデフォルトのドラッグ＆ドロップイベントを無効化
@@ -25,8 +24,8 @@ const App = () => {
       <Main />
       <div className={`ui-layer ${isShownUi ? '' : 'hidden'}`}>
         <InfoPanel />
-        <IconButton
-          icon={hideIcon}
+        <FloatIconButton
+          iconType="hide"
           label="hide"
           className="hide-icon"
           onClick={handleClickIcon}
