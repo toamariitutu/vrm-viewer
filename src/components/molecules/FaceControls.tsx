@@ -39,7 +39,7 @@ const FaceControls = ({ className }: Props) => {
     [setBlendShape],
   )
   return (
-    <div className={className || ''}>
+    <div className={`p-24 ${className || ''}`}>
       <div className="form-group form-group--row">
         <p className="form-group__label">視線追従：</p>
         <div className="form-group__control">

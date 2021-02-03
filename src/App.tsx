@@ -1,8 +1,7 @@
 import React, { useContext, useCallback } from 'react'
 import EventListener from 'react-event-listener'
 import Main from 'components/molecules/Main'
-import Menu from 'components/molecules/Menu'
-import Panel from 'components/molecules/Panel'
+import MenuPanels from 'components/molecules/MenuPanels'
 import InfoPanel from 'components/atoms/InfoPanel'
 import FloatIconButton from 'components/atoms/FloatIconButton'
 import 'scss/App.scss'
@@ -30,8 +29,7 @@ const App = () => {
           className="hide-icon"
           onClick={handleClickIcon}
         />
-        <Menu />
-        <Panel />
+        <MenuPanels />
       </div>
       <div className="sw-update-dialog"></div>
     </div>

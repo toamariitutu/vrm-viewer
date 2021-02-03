@@ -36,7 +36,7 @@ const EyesControls = ({ className }: Props) => {
     [toggleShowAxes],
   )
   return (
-    <div className={className || ''}>
+    <div className={`p-24 ${className || ''}`}>
       <div className="form-group form-group--row">
         <p className="form-group__label">待機モーション：</p>
         <div className="form-group__control">

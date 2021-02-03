@@ -18,7 +18,7 @@ const EmotionControls = ({ className }: Props) => {
     [setBlendShape],
   )
   return (
-    <div className={className || ''}>
+    <div className={`p-24 ${className || ''}`}>
       <div className="form-group">
         <p className="form-group__label">
           Joy：{Math.round(blendShapeMap.joy! * 100)}

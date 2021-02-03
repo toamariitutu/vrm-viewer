@@ -13,6 +13,7 @@ type Props = {
 const IconButton = ({ iconType, label, onClick, className, style }: Props) => {
   return (
     <button
+      type="button"
       aria-label={label}
       className={`${styles.icon} ${iconType} ${className || ''}`}
       onClick={onClick}
