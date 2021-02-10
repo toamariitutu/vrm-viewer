@@ -1,6 +1,6 @@
-import React, { useContext, useCallback } from 'react'
+import React, { useContext, useCallback, useRef } from 'react'
 import Menu from 'components/molecules/Menu'
-import Panel from 'components/molecules/Panel'
+import Panel, { ImperativeHandle } from 'components/molecules/Panel'
 import { MenuModeContext } from 'contexts'
 
 export enum MenuMode {
@@ -12,10 +12,20 @@ export enum MenuMode {
   Option = 'Option',
 }
 
+export type ScrollPosMap = {
+  [key in MenuMode]: number
+}
+
 const MenuPanels = () => {
   const [currentMode, setMode] = useContext(MenuModeContext)
+  const scrollPosMapRef = useRef<ScrollPosMap>({} as ScrollPosMap)
+  /** パネルのスクロール位置取得用ref */
+  const ref = useRef<ImperativeHandle>({} as ImperativeHandle)
   const changeMenuMode = useCallback(
     (mode: MenuMode) => () => {
+      if (currentMode) {
+        scrollPosMapRef.current[currentMode] = ref.current.panelHeight()
+      }
       if (mode === currentMode) {
         setMode(MenuMode.Neutral)
       } else {
@@ -31,7 +41,13 @@ const MenuPanels = () => {
         currentMode={currentMode}
         handleMenuItemClick={changeMenuMode}
       />
-      <Panel currentMode={currentMode} />
+      {currentMode ? (
+        <Panel
+          ref={ref}
+          currentMode={currentMode}
+          scrollPosMapRef={scrollPosMapRef}
+        />
+      ) : null}
     </>
   )
 }
