@@ -20,6 +20,11 @@ import {
   ModelLoaderContext,
   InfoPanelContext,
   UIContext,
+  initialPoseEditorStatus,
+  PoseControlType,
+  PoseEditorStatusContext,
+  initialPoseFormData,
+  PoseEditorFormContext,
 } from 'contexts'
 import { MenuMode } from './components/molecules/MenuPanels'
 
@@ -29,7 +34,11 @@ import { MenuMode } from './components/molecules/MenuPanels'
 const Provider: React.FunctionComponent = ({ children }) => {
   const vrmManagerRef = useRef<VrmManager | null>(null)
   const [blendShapeMap, setBlenShapeState] = useState(initialVrmData.blendShape)
-  const [pose, setPoseState] = useState(initialVrmData.pose)
+  const [poseId, setPoseState] = useState<string>(initialVrmData.pose)
+  const [poseEditorStatus, setPoseEditorStatus] = useState(
+    initialPoseEditorStatus,
+  )
+  const [poseFormData, setPoseFormDataState] = useState(initialPoseFormData)
   const [lookAtCamera, setLookAtCameraState] = useState(
     initialVrmData.lookAtCamera,
   )
@@ -54,9 +63,65 @@ const Provider: React.FunctionComponent = ({ children }) => {
     setBlenShapeState(prevState => ({ ...prevState, [name]: weight }))
     vrmManagerRef.current?.updateBlendShape(name, weight)
   }
-  const setPose = (pose: PresetPoses) => {
-    setPoseState(pose)
-    vrmManagerRef.current?.setPresetPoses(pose)
+  const setPose = (poseId: string) => {
+    setPoseState(poseId)
+    vrmManagerRef.current?.setPose(poseId)
+  }
+  const setPoseAddMode = () => {
+    setPoseEditorStatus(prevType => ({
+      ...prevType,
+      editType: 'add',
+      edittingPoseId: 'tempId',
+      deletingPoseId: initialPoseEditorStatus.deletingPoseId,
+    }))
+    vrmManagerRef.current?.activateBoneControls()
+    vrmManagerRef.current?.activateBodyControls()
+    vrmManagerRef.current?.hideBodyControlsManipulator()
+  }
+  const setEditPoseId = (poseId: string) => {
+    setPoseEditorStatus(prevType => ({
+      ...prevType,
+      editType: 'edit',
+      edittingPoseId: poseId,
+      deletingPoseId: initialPoseEditorStatus.deletingPoseId,
+    }))
+    vrmManagerRef.current?.activateBoneControls()
+    vrmManagerRef.current?.activateBodyControls()
+    vrmManagerRef.current?.hideBodyControlsManipulator()
+  }
+  const setDeletePoseId = (
+    poseId: string = initialPoseEditorStatus.deletingPoseId,
+  ) => {
+    setPoseEditorStatus(prevType => ({
+      ...prevType,
+      editType: initialPoseEditorStatus.editType,
+      deletingPoseId: poseId,
+    }))
+  }
+  const changePoseControlType = (type: PoseControlType = 'bone') => {
+    setPoseEditorStatus(prevType => ({
+      ...prevType,
+      controlType: type,
+    }))
+    if (type === 'bone') {
+      vrmManagerRef.current?.hideBodyControlsManipulator()
+      vrmManagerRef.current?.showBoneControlsManipulator()
+    }
+    if (type === 'body') {
+      vrmManagerRef.current?.hideBoneControlsManipulator()
+      vrmManagerRef.current?.showBodyControlsManipulator()
+    }
+  }
+  const resetPoseEditorStatus = () => {
+    vrmManagerRef.current?.deactivateBoneControls()
+    vrmManagerRef.current?.deactivateBodyControls()
+    setPoseEditorStatus(initialPoseEditorStatus)
+  }
+  const setPoseFormData = (val: string, key = 'poseName') => {
+    setPoseFormDataState(formData => ({ ...formData, [key]: val }))
+  }
+  const clearPoseFormData = () => {
+    setPoseFormDataState(initialPoseFormData)
   }
   const toggleLookAtCamera = (bool: boolean) => {
     setLookAtCameraState(bool)
@@ -109,41 +174,58 @@ const Provider: React.FunctionComponent = ({ children }) => {
   return (
     <VrmManagerContext.Provider value={[vrmManagerRef.current, setVrmManager]}>
       <BlendShapeContext.Provider value={[blendShapeMap, setBlendShape]}>
-        <PoseContext.Provider value={[pose, setPose]}>
-          <LookAtCameraContext.Provider
-            value={[lookAtCamera, toggleLookAtCamera]}
+        <PoseContext.Provider value={[poseId, setPose]}>
+          <PoseEditorStatusContext.Provider
+            value={[
+              poseEditorStatus,
+              setPoseAddMode,
+              setEditPoseId,
+              setDeletePoseId,
+              changePoseControlType,
+              resetPoseEditorStatus,
+            ]}
           >
-            <AutoBlinkContext.Provider value={[autoBlink, toggleAutoBlink]}>
-              <WaitingAnimationContext.Provider
-                value={[waitingAnimation, toggleWaitingAnimation]}
+            <PoseEditorFormContext.Provider
+              value={[poseFormData, setPoseFormData, clearPoseFormData]}
+            >
+              <LookAtCameraContext.Provider
+                value={[lookAtCamera, toggleLookAtCamera]}
               >
-                <ShowGridContext.Provider value={[showGrid, setShowGrid]}>
-                  <ShowAxesContext.Provider value={[showAxes, setShowAxes]}>
-                    <MenuModeContext.Provider value={[menuMode, setMenuMode]}>
-                      <InfoPanelContext.Provider
-                        value={[showInfo, setShowInfo]}
-                      >
-                        <UIContext.Provider value={[isShown, toggleUi]}>
-                          <LoadingContext.Provider
-                            value={[
-                              loadingStatus,
-                              startLoading,
-                              stopLoading,
-                              updateProgress,
-                            ]}
+                <AutoBlinkContext.Provider value={[autoBlink, toggleAutoBlink]}>
+                  <WaitingAnimationContext.Provider
+                    value={[waitingAnimation, toggleWaitingAnimation]}
+                  >
+                    <ShowGridContext.Provider value={[showGrid, setShowGrid]}>
+                      <ShowAxesContext.Provider value={[showAxes, setShowAxes]}>
+                        <MenuModeContext.Provider
+                          value={[menuMode, setMenuMode]}
+                        >
+                          <InfoPanelContext.Provider
+                            value={[showInfo, setShowInfo]}
                           >
-                            <ModelLoaderContext.Provider value={loadModel}>
-                              {children}
-                            </ModelLoaderContext.Provider>
-                          </LoadingContext.Provider>
-                        </UIContext.Provider>
-                      </InfoPanelContext.Provider>
-                    </MenuModeContext.Provider>
-                  </ShowAxesContext.Provider>
-                </ShowGridContext.Provider>
-              </WaitingAnimationContext.Provider>
-            </AutoBlinkContext.Provider>
-          </LookAtCameraContext.Provider>
+                            <UIContext.Provider value={[isShown, toggleUi]}>
+                              <LoadingContext.Provider
+                                value={[
+                                  loadingStatus,
+                                  startLoading,
+                                  stopLoading,
+                                  updateProgress,
+                                ]}
+                              >
+                                <ModelLoaderContext.Provider value={loadModel}>
+                                  {children}
+                                </ModelLoaderContext.Provider>
+                              </LoadingContext.Provider>
+                            </UIContext.Provider>
+                          </InfoPanelContext.Provider>
+                        </MenuModeContext.Provider>
+                      </ShowAxesContext.Provider>
+                    </ShowGridContext.Provider>
+                  </WaitingAnimationContext.Provider>
+                </AutoBlinkContext.Provider>
+              </LookAtCameraContext.Provider>
+            </PoseEditorFormContext.Provider>
+          </PoseEditorStatusContext.Provider>
         </PoseContext.Provider>
       </BlendShapeContext.Provider>
     </VrmManagerContext.Provider>

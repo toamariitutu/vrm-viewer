@@ -24,10 +24,50 @@ export const BlendShapeContext = createContext<
 >([initialData.blendShape, (name, weight) => {}])
 
 /** ポーズを管理するContext */
-export const PoseContext = createContext<Context<PresetPoses>>([
+export const PoseContext = createContext<Context<PresetPoses | string>>([
   initialData.pose,
   val => {},
 ])
+
+export type PoseEditType = '' | 'add' | 'edit'
+export type PoseControlType = 'bone' | 'body'
+export type PoseEditorStatus = {
+  editType: PoseEditType
+  controlType: PoseControlType
+  edittingPoseId: string
+  deletingPoseId: string
+}
+type SetPoseAddMode = () => void
+type SetEditPoseId = (poseId: string) => void
+type SetDeletePoseId = (poseId: string) => void
+type SetPoseControlType = (type?: PoseControlType) => void
+type ResetPoseEditorStatus = () => void
+export const initialPoseEditorStatus: PoseEditorStatus = {
+  editType: '',
+  controlType: 'bone',
+  edittingPoseId: '',
+  deletingPoseId: '',
+}
+/** ポーズエディターの状態を管理するContext */
+export const PoseEditorStatusContext = createContext<
+  [
+    PoseEditorStatus,
+    SetPoseAddMode,
+    SetEditPoseId,
+    SetDeletePoseId,
+    SetPoseControlType,
+    ResetPoseEditorStatus,
+  ]
+>([initialPoseEditorStatus, () => {}, () => {}, () => {}, () => {}, () => {}])
+
+export type PoseEditorForm = {
+  poseName: string
+}
+export const initialPoseFormData = { poseName: '' }
+/** ポーズ編集時のユーザー入力を管理するContext */
+export const PoseEditorFormContext = createContext<
+  [PoseEditorForm, (val: string, key?: string) => void, () => void]
+>([initialPoseFormData, val => {}, () => {}])
 
 /** 視線追従の状態を管理するContext */
 export const LookAtCameraContext = createContext<Context<boolean>>([

@@ -1,13 +1,53 @@
+@import '../fontawesome/fontawesome.scss';
+@import '../fontawesome/regular.scss';
 @import '../variables';
+@import '../mixins';
+
+@mixin icon-button($icon, $size: 2.2rem, $color: $clickable-gray) {
+  display: none;
+  height: 28px;
+  width: 28px;
+  color: $color;
+  cursor: pointer;
+  @extend %fa-icon;
+  @extend .far;
+  :global(.selected):not(:global(.editting)) & {
+    display: inline-block;
+  }
+  &:before {
+    content: fa-content($icon);
+    position: relative;
+    font-size: $size;
+  }
+  &:hover {
+    color: darken($color, 10%);
+    @include for-sp {
+      color: $color;
+    }
+  }
+  &:active {
+    @include for-sp {
+      color: darken($color, 10%);
+    }
+  }
+}
+
+$transition: 0.1s ease-in;
 
 .container {
   overflow: auto;
+  width: 300px;
+  background-color: #ffffff;
 }
 .list {
   max-height: 100%;
   width: 100%;
 }
 .item {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   padding: 0 16px;
   height: 48px;
   width: 100%;
@@ -19,12 +59,205 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
-  // background-color: rgba(255, 255, 255, 0.5);
+  -webkit-tap-highlight-color: transparent;
+  @include for-sp {
+    padding: 0 24px;
+  }
   &:global(.selected) {
-    background-color: rgba(187, 197, 214, 0.5);
+    background-color: #dee4eb;
     box-shadow: 0 1px 3px 1px rgba(0, 0, 0, 0.05);
+  }
+  &__name {
+    margin: 0 10px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+}
+
+.edit-button {
+  @include icon-button($fa-var-edit);
+  margin-left: 0;
+  margin-right: auto;
+}
+.delete-button {
+  @include icon-button($fa-var-trash-alt);
+  margin-left: auto;
+  margin-right: 0;
+  &:hover {
+    color: $bright-red;
+    @include for-sp {
+      color: $bright-red;
+    }
+  }
+  &:active {
+    @include for-sp {
+      color: $bright-red;
+    }
+  }
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0 28px;
+  height: 100%;
+  width: 100%;
+  background-color: #ffffff;
+  visibility: hidden;
+  opacity: 0;
+  z-index: -1;
+  transition: all $transition;
+  @include for-sp {
+    padding: 0 36px;
+  }
+  :global(.selected) & {
+    background-color: #dee4eb;
+  }
+  :global(.editting) & {
+    visibility: visible;
+    opacity: 1;
+    z-index: 0;
+  }
+}
+.input {
+  position: relative;
+  margin-top: 4px;
+  padding: 2px;
+  width: 100%;
+  text-align: center;
+  font-size: 1.7rem;
+  border-bottom: solid 2px lighten($clickable-gray, 10%);
+  cursor: pointer;
+  &:focus {
+    cursor: auto;
+  }
+}
+
+.underline {
+  position: relative;
+  top: -3px;
+  height: 1px;
+  width: 100%;
+  border-bottom: solid 3px lighten($primary-color, 2%);
+  transform: scaleX(0);
+  transition: transform 0.12s ease-in-out;
+  .input:focus + & {
+    transform: scaleX(1);
+  }
+}
+
+.confirm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0 15px;
+  height: 100%;
+  width: 100%;
+  background-color: #ffffff;
+  visibility: hidden;
+  opacity: 0;
+  z-index: -1;
+  transition: all 0.2s ease-in;
+  @include for-sp {
+    padding: 0 23px;
+  }
+  :global(.selected) & {
+    background-color: #dee4eb;
+  }
+  :global(.deleting) & {
+    visibility: visible;
+    opacity: 1;
+    z-index: 0;
+  }
+}
+.delete-ok {
+  @include icon-button($fa-var-check-circle, 2.4rem, $bright-red);
+  margin-left: 0;
+  margin-right: auto;
+  visibility: visible;
+  opacity: 1;
+  z-index: 0;
+  transition: all 0.1s ease-in;
+  :global(.deleted) & {
+    visibility: hidden;
+    opacity: 0;
+    z-index: -1;
+  }
+}
+.delete-cancel {
+  @include icon-button($fa-var-times-circle, 2.4rem);
+  margin-left: auto;
+  margin-right: 0;
+  visibility: visible;
+  opacity: 1;
+  z-index: 0;
+  transition: all 0.1s ease-in;
+  :global(.deleted) & {
+    visibility: hidden;
+    opacity: 0;
+    z-index: -1;
+  }
+}
+.delete-text {
+  color: $bright-red;
+}
+
+.sticky-container {
+  position: sticky;
+  bottom: 0;
+}
+.message-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0 28px;
+  height: 100%;
+  width: 100%;
+  background-color: #ffffff;
+  overflow: auto;
+  z-index: 1;
+  visibility: hidden;
+  opacity: 0;
+  transition: all 0.3s;
+  &:global(.success), &:global(.error) {
+    visibility: visible;
+    opacity: 1;
+  }
+}
+.message-text {
+  max-height: 100%;
+  font-size: 1.7rem;
+  color: $bright-green;
+  :global(.success) & {
+    color: $bright-green;
+    font-size: 1.9rem;
+  }
+  :global(.error) & {
+    color: $bright-red;
   }
 }
 
 @media screen and (max-width: 480px) {
+  .container {
+    width: 100%;
+  }
 }

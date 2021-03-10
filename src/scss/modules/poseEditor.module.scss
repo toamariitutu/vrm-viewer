@@ -1,0 +1,111 @@
+@import '../fontawesome/fontawesome.scss';
+@import '../fontawesome/solid.scss';
+@import '../fontawesome/regular.scss';
+@import '../variables';
+@import '../mixins';
+
+@mixin icon-button($type, $icon, $size: 2.5rem) {
+  position: relative;
+  display: inline-block;
+  height: 34px;
+  width: 34px;
+  color: $clickable-gray;
+  font-size: $size;
+  cursor: pointer;
+  @extend %fa-icon;
+  @extend #{$type};
+  &:before {
+    content: fa-content($icon);
+    position: relative;
+  }
+  &:hover {
+    color: darken($clickable-gray, 10%);
+    @include for-sp {
+      color: $clickable-gray;
+    }
+  }
+  &:active {
+    @include for-sp {
+      color: darken($clickable-gray, 10%);
+    }
+  }
+}
+
+$transition: 0.1s ease-in;
+
+.container {
+  height: 48px;
+  background-color: #ffffff;
+  box-shadow: 0 -1px 2px 1px rgba(0, 0, 0, 0.05);
+}
+.plus-button {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  cursor: pointer;
+  z-index: 1;
+  opacity: 1;
+  visibility: visible;
+  transition: all $transition;
+  @extend %fa-icon;
+  @extend .fas;
+  &:before {
+    content: fa-content($fa-var-plus);
+    color: lighten($primary-color, 2%);
+    font-size: 2.2rem;
+  }
+  :global(.active) & {
+    z-index: 0;
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+.editor {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  height: 100%;
+  width: 100%;
+  z-index: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition: all $transition;
+  :global(.active) & {
+    z-index: 1;
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+.save-button {
+  @include icon-button('.far', $fa-var-save, 2.7rem);
+}
+.controls {
+  display: flex;
+}
+.bone-button {
+  @include icon-button('.fas', $fa-var-bone);
+  &:global(.selected) {
+    color: lighten($primary-color, 2%)
+  }
+}
+.translate-button {
+  @include icon-button('.fas', $fa-var-arrows-alt);
+  margin-left: 32px;
+  &:global(.selected) {
+    color: $primary-color
+  }
+}
+.cancel-button {
+  @include icon-button('.far', $fa-var-times-circle);
+}
+
+@include for-sp {
+
+}
