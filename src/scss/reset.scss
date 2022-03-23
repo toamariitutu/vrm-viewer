@@ -102,13 +102,15 @@ input, select {
   outline: 0;
 }
 
-button, [type="submit"], [type="button"] {
+button {
+  padding: 0;
 	background: none;
 	border: none;
 	outline: none;
 	-webkit-appearance: none;
 	-moz-appearance: none;
-	appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 *,

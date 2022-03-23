@@ -21,7 +21,7 @@ import {
   InfoPanelContext,
   UIContext,
 } from 'contexts'
-import { Mode } from 'components/molecules/Menu'
+import { MenuMode } from './components/molecules/MenuPanels'
 
 /**
  * グローバルなStateを提供するComponent
@@ -39,7 +39,7 @@ const Provider: React.FunctionComponent = ({ children }) => {
   )
   const [showGrid, setShowGridState] = useState(initialVrmData.gridHelper)
   const [showAxes, setShowAxesState] = useState(initialVrmData.axesHelper)
-  const [menuMode, setMenuMode] = useState(Mode.Neutral)
+  const [menuMode, setMenuMode] = useState(MenuMode.Neutral)
   const [showInfo, setShowInfo] = useState(false)
   const [isShown, toggleUi] = useState(true)
   const [loadingStatus, setLoadingStatus] = useState(initialLoadingStatus)

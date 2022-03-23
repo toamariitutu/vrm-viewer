@@ -1,6 +1,6 @@
 import React, { useContext, useCallback, useRef, SyntheticEvent } from 'react'
 import * as context from 'contexts'
-import { Mode } from './Menu'
+import { MenuMode } from './MenuPanels'
 
 type Props = {
   className?: string
@@ -21,8 +21,7 @@ const ModelControls = ({ className }: Props) => {
       const file = files[0]
       if (!file) return
 
-      setMenuMode(Mode.Neutral)
-      console.log(file)
+      setMenuMode(MenuMode.Neutral)
       const blob = new Blob([file], { type: 'application/octet-stream' })
       const url = URL.createObjectURL(blob)
       loadModel(url)
@@ -35,7 +34,7 @@ const ModelControls = ({ className }: Props) => {
   }, [])
 
   const loadDefaultModel = useCallback(() => {
-    setMenuMode(Mode.Neutral)
+    setMenuMode(MenuMode.Neutral)
     loadModel()
   }, [loadModel, setMenuMode])
 

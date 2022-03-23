@@ -4,7 +4,7 @@ import VrmManager from 'VrmManager'
 import Loader from 'components/atoms/Loader'
 import * as util from 'util/functions'
 import * as context from 'contexts'
-import { Mode } from 'components/molecules/Menu'
+import { MenuMode } from 'components/molecules/MenuPanels'
 
 type Props = {
   className?: string
@@ -13,10 +13,10 @@ type Props = {
 const isMobile = util.isMobileDevice()
 
 const acceptDnD = (
-  currentMode: Mode,
+  currentMode: MenuMode,
   handler: (e: React.DragEvent) => void,
 ) => {
-  if (!isMobile && currentMode === Mode.Model) return handler
+  if (!isMobile && currentMode === MenuMode.Model) return handler
   return undefined
 }
 
@@ -60,7 +60,7 @@ const Main = ({ className }: Props) => {
       if (!isShownUi) {
         toggleUi(true)
       } else {
-        setMenuMode(Mode.Neutral)
+        setMenuMode(MenuMode.Neutral)
         showInfo(false)
       }
     }
@@ -75,7 +75,7 @@ const Main = ({ className }: Props) => {
       const file = files[0]
       if (!file) return
 
-      setMenuMode(Mode.Neutral)
+      setMenuMode(MenuMode.Neutral)
       const blob = new Blob([file], { type: 'application/octet-stream' })
       const url = URL.createObjectURL(blob)
       loadModel(url)

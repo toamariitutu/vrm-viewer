@@ -1,4 +1,11 @@
-import React, { useContext, useState, useEffect } from 'react'
+import React, {
+  forwardRef,
+  useEffect,
+  MutableRefObject,
+  useRef,
+  useImperativeHandle,
+  useState,
+} from 'react'
 import TabPanel from 'components/atoms/TabPanel'
 import TabContent from 'components/atoms/TabContent'
 import EmotionControls from 'components/molecules/EmotionControls'
@@ -7,52 +14,87 @@ import PoseListControls from 'components/molecules/PoseListControls'
 import ModelControls from 'components/molecules/ModelControls'
 import OptionControls from 'components/molecules/OptionControls'
 import styles from 'scss/modules/panel.module.scss'
-import * as context from 'contexts'
-import { Mode } from './Menu'
+import { MenuMode, ScrollPosMap } from './MenuPanels'
 
 type Props = {
-  className?: string
+  currentMode: MenuMode
+  scrollPosMapRef: MutableRefObject<ScrollPosMap>
 }
 
-const show = (currentMode: Mode) => {
-  if (currentMode === Mode.Neutral) {
-    return ''
-  }
-  return 'show'
+export type ImperativeHandle = {
+  panelHeight: () => number
 }
 
-const Panel = ({ className }: Props) => {
-  const [currentMode, setMenuMode] = useContext(context.MenuModeContext)
-  const [localMode, setLocalMode] = useState(currentMode)
+const Panel = forwardRef<ImperativeHandle, Props>(
+  ({ currentMode, scrollPosMapRef }: Props, ref) => {
+    const panelElemRef = useRef<HTMLDivElement>(null)
+    const currentModeRef = useRef<MenuMode>(currentMode)
+    // パネルの開閉状態
+    const [isOpen, open] = useState(false)
+    // パネル内コンテンツの表示状態
+    const [isShown, show] = useState(false)
+    // modeが変更時にスクロール位置を復元
+    useEffect(() => {
+      if (currentMode) {
+        currentModeRef.current = currentMode
+        // パネル内のDOMが更新されてから処理させるための遅延
+        setTimeout(() => {
+          panelElemRef.current!.scrollTop = scrollPosMapRef.current[currentMode]
+          open(true)
+          show(true)
+        }, 0)
+      }
+      return () => {
+        // スクロール位置復元時のちらつきを隠すため
+        // メニュー切替時にコンテンツを一旦非表示にする
+        show(false)
+      }
+    }, [currentMode, scrollPosMapRef])
 
-  useEffect(() => {
-    setLocalMode(prevMode =>
-      currentMode === Mode.Neutral ? prevMode : currentMode,
+    // パネルが閉じられた時にスクロール位置を記録
+    useEffect(() => {
+      const panelElem = panelElemRef.current
+      const scrollPosMap = scrollPosMapRef.current
+      return () => {
+        scrollPosMap[currentModeRef.current] = panelElem?.scrollTop || 0
+        open(false)
+      }
+    }, [scrollPosMapRef])
+
+    // 親からのスクロール位置取得用
+    useImperativeHandle(
+      ref,
+      () => ({
+        panelHeight: () => panelElemRef.current?.scrollTop || 0,
+      }),
+      [],
     )
-  }, [currentMode, setMenuMode])
-
-  return (
-    <div className={`${styles.container} ${show(currentMode)}`}>
-      <div className={styles.panel}>
-        <TabPanel selectedKey={localMode}>
-          <TabContent key={Mode.Emotion}>
-            <EmotionControls className="p-24" />
-          </TabContent>
-          <TabContent key={Mode.Face}>
-            <FaceControls className="p-24" />
-          </TabContent>
-          <TabContent key={Mode.Pose}>
-            <PoseListControls />
-          </TabContent>
-          <TabContent key={Mode.Model}>
-            <ModelControls />
-          </TabContent>
-          <TabContent key={Mode.Option}>
-            <OptionControls className="p-24" />
-          </TabContent>
-        </TabPanel>
+    return (
+      <div className={`${styles.container} ${isOpen ? 'open' : ''}`}>
+        <div ref={panelElemRef} className={styles.panel}>
+          <TabPanel
+            selectedKey={currentModeRef.current}
+            className={`${styles.contents} ${isShown ? 'show' : ''}`}
+          >
+            <TabContent key={MenuMode.Emotion}>
+              <EmotionControls />
+            </TabContent>
+            <TabContent key={MenuMode.Face}>
+              <FaceControls />
+            </TabContent>
+            <TabContent key={MenuMode.Pose}>
+              <PoseListControls />
+            </TabContent>
+            <TabContent key={MenuMode.Model}>
+              <ModelControls />
+            </TabContent>
+            <TabContent key={MenuMode.Option}>
+              <OptionControls />
+            </TabContent>
+          </TabPanel>
+        </div>
       </div>
-    </div>
-  )
-}
+    )
+  },
+)
 export default Panel

@@ -5,7 +5,7 @@ import VrmManager, {
   PresetPoses,
   initialData,
 } from 'VrmManager'
-import { Mode } from 'components/molecules/Menu'
+import { MenuMode } from 'components/molecules/MenuPanels'
 
 type SetterFunc<T> = (val: T) => void
 type Context<T, U = SetterFunc<T>> = [T, U]
@@ -59,8 +59,8 @@ export const ShowAxesContext = createContext<Context<boolean>>([
 ])
 
 /** メニューのモードを管理するContext */
-export const MenuModeContext = createContext<Context<Mode>>([
-  Mode.Neutral,
+export const MenuModeContext = createContext<Context<MenuMode>>([
+  MenuMode.Neutral,
   val => {},
 ])
 

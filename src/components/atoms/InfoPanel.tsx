@@ -3,7 +3,7 @@ import { VRMSchema } from '@pixiv/three-vrm'
 import FloatIconButton from 'components/atoms/FloatIconButton'
 import styles from 'scss/modules/infoPanel.module.scss'
 import { VrmManagerContext, InfoPanelContext, MenuModeContext } from 'contexts'
-import { Mode } from 'components/molecules/Menu'
+import { MenuMode } from 'components/molecules/MenuPanels'
 
 type Dict<T extends string> = {
   [key in T]: string
@@ -40,14 +40,14 @@ const InfoPanel = () => {
   const meta = vrmManager?.metaInfo || {}
 
   useEffect(() => {
-    if (currentMode !== Mode.Neutral) {
+    if (currentMode !== MenuMode.Neutral) {
       setShown(false)
     }
   }, [currentMode, setShown])
 
   const handleClickIcon = useCallback(() => {
     setShown(!shown)
-    setMenuMode(Mode.Neutral)
+    setMenuMode(MenuMode.Neutral)
   }, [setShown, shown, setMenuMode])
   return (
     <div className={styles.container}>
