@@ -1,11 +1,21 @@
 import * as THREE from 'three'
 import { GLTFLoader, GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { VRM, VRMSchema, VRMPose, VRMUtils } from '@pixiv/three-vrm'
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
+import {
+  VRM,
+  VRMSchema,
+  VRMPose,
+  VRMUtils,
+  VRMPoseTransform,
+  RawVector3,
+} from '@pixiv/three-vrm'
 import aStacePoseData from 'assets/poses/a_stance.json'
 import tStancePoseData from 'assets/poses/t_stance.json'
 import standContrappostoPoseData from 'assets/poses/standing_contrapposto.json'
 import doublePeacePoseData from 'assets/poses/double_peace.json'
+import { generateUuid } from 'util/functions'
+import { Vector3 } from 'three'
 
 enum Axis {
   x = 0,
@@ -43,39 +53,50 @@ const InterfereBlinkPresets = [
   VRMSchema.BlendShapePresetName.BlinkL,
 ]
 
+export type PosesData = {
+  id: string
+  name: string
+  data: VRMPose
+  isPreset?: boolean
+}
 /** PresetPosesのkeyのenum */
 export enum PresetPoses {
-  AStance = 'aStance',
   TStance = 'tStance',
+  AStance = 'aStance',
   StandingContrapposto = 'standingContrapposto',
   DoublePeace = 'doublePeace',
 }
-
-export type PresetPosesData = { key: PresetPoses; name: string; data: VRMPose }
-
-export const presetPosesMap: {
-  [name in PresetPoses]: PresetPosesData
+const presetPosesMap: {
+  [id in PresetPoses]: PosesData
 } = {
-  [PresetPoses.AStance]: {
-    key: PresetPoses.AStance,
-    name: 'Aスタンス',
-    data: (aStacePoseData as any) as VRMPose,
-  },
   [PresetPoses.TStance]: {
-    key: PresetPoses.TStance,
+    id: PresetPoses.TStance,
     name: 'Tスタンス',
     data: (tStancePoseData as any) as VRMPose,
+    isPreset: true,
+  },
+  [PresetPoses.AStance]: {
+    id: PresetPoses.AStance,
+    name: 'Aスタンス',
+    data: (aStacePoseData as any) as VRMPose,
+    isPreset: true,
   },
   [PresetPoses.StandingContrapposto]: {
-    key: PresetPoses.StandingContrapposto,
-    name: 'コントラポスト立ち',
+    id: PresetPoses.StandingContrapposto,
+    name: 'モデル立ち',
     data: (standContrappostoPoseData as any) as VRMPose,
+    isPreset: true,
   },
   [PresetPoses.DoublePeace]: {
-    key: PresetPoses.DoublePeace,
+    id: PresetPoses.DoublePeace,
     name: 'ダブルピース',
     data: (doublePeacePoseData as any) as VRMPose,
+    isPreset: true,
   },
+}
+
+export type UserPosesMap = {
+  [id: string]: PosesData
 }
 
 export type Model = {
@@ -89,6 +110,26 @@ export const defaultModel = {
   filePath: `${process.env.PUBLIC_URL}/models/AliciaSolid.vrm`,
 }
 
+const BONE_CONTROLS_SIZE = {
+  DEFAULT: 1,
+  SM: 0.1,
+}
+
+const uncontrolableBoneNameArray = [
+  VRMSchema.HumanoidBoneName.Jaw,
+  VRMSchema.HumanoidBoneName.LeftEye,
+  VRMSchema.HumanoidBoneName.RightEye,
+]
+
+const controlableBoneNameArray = (() =>
+  Object.values(VRMSchema.HumanoidBoneName).filter(
+    boneName => !uncontrolableBoneNameArray.includes(boneName),
+  ))()
+
+type BoneControlsMap = {
+  [key in VRMSchema.HumanoidBoneName]: TransformControls
+}
+
 type InitialData = {
   blendShape: BlendShapeWeightMap
   manualBlinkVal: number
@@ -97,17 +138,25 @@ type InitialData = {
   blinkActivatd: boolean
   waitingActivatd: boolean
   blendShapeModified: boolean
+  boneControlsMap: BoneControlsMap
+  boneControlling: boolean
+  boneControlsHidden: boolean
+  bodyControls: TransformControls | null
   gridHelper: boolean
   axesHelper: boolean
 }
 export const initialData: InitialData = {
   blendShape: initialBlendShapeWeightMap,
   manualBlinkVal: 0,
-  pose: PresetPoses.AStance,
+  pose: PresetPoses.TStance,
   lookAtCamera: true,
   blinkActivatd: true,
   waitingActivatd: true,
   blendShapeModified: false,
+  boneControlsMap: {} as BoneControlsMap,
+  boneControlling: false,
+  boneControlsHidden: false,
+  bodyControls: null,
   gridHelper: true,
   axesHelper: true,
 }
@@ -117,22 +166,32 @@ class VrmManager {
   private _scene!: THREE.Scene
   private _pCamera!: THREE.PerspectiveCamera
   private _renderer!: THREE.WebGLRenderer
-  private _controls!: OrbitControls
+  private _orbitControls!: OrbitControls
   private _vrm!: VRM
   private _mixer!: THREE.AnimationMixer
+  /** モデルの基準となるHipsのposition */
   private _basePosition = new THREE.Vector3()
   private _currentBlendShapeWeightMap: BlendShapeWeightMap =
     initialData.blendShape
   private _manualBlinkVal: number = initialData.manualBlinkVal
-  private _currentPoseKey: PresetPoses = initialData.pose
+  private _currentPoseId: string = initialData.pose
   private _lookAtCamera: boolean = initialData.lookAtCamera
   private _blinkActivated: boolean = initialData.blinkActivatd
   private _blendShapeModified: boolean = initialData.blendShapeModified
   private _waitingActivated: boolean = initialData.waitingActivatd
   private _waitingAnimation?: THREE.AnimationAction
+  private _boneControlsMap: BoneControlsMap = initialData.boneControlsMap
+  private _boneControlling: boolean = initialData.boneControlling
+  private _activatingBoneName: VRMSchema.HumanoidBoneName | null = null
+  private _boneControlsHidden: boolean = initialData.boneControlsHidden
+  private _bodyControls: TransformControls | null = initialData.bodyControls
+  /** ボーン操作用のマニュピレーターがタップされたかの判定用 */
+  private _boneManipulatorTapped = false
   private _gridHelper!: THREE.GridHelper
   private _axesHelper!: THREE.AxesHelper
   private _clock!: THREE.Clock
+  /** タップ判定用 */
+  private _pointerDownTime = 0
 
   constructor(containerElem: HTMLDivElement) {
     try {
@@ -148,11 +207,26 @@ class VrmManager {
       )
       this._pCamera.position.set(0, 1.1, 3)
 
-      // コントーロールの設定
-      this._controls = new OrbitControls(this._pCamera, this._containerElem)
-      this._controls.target.set(0, 0.85, 0)
-      this._controls.screenSpacePanning = true
-      this._controls.update()
+      // カメラコントロールの設定
+      this._orbitControls = new OrbitControls(
+        this._pCamera,
+        this._containerElem,
+      )
+      this._orbitControls.target.set(0, 0.85, 0)
+      this._orbitControls.screenSpacePanning = true
+      this._orbitControls.addEventListener('start', e => {
+        this._pointerDownTime = performance.now()
+      })
+      this._orbitControls.addEventListener('end', e => {
+        const pointerUpTime = performance.now()
+        if (pointerUpTime - this._pointerDownTime < 200) {
+          if (!this._boneControlsHidden && !this._boneManipulatorTapped) {
+            this.resetBoneControlsManipulator()
+          }
+        }
+        this._boneManipulatorTapped = false
+      })
+      this._orbitControls.update()
 
       // レンダラーの設定
       this._renderer = new THREE.WebGLRenderer({
@@ -187,6 +261,22 @@ class VrmManager {
 
   get metaInfo() {
     return this._vrm?.meta
+  }
+
+  static get presetPosesMap() {
+    return presetPosesMap
+  }
+  static get userPosesMap() {
+    try {
+      const localStorageVal = localStorage.getItem('poses')
+      const userPoseMap: UserPosesMap = localStorageVal
+        ? JSON.parse(localStorageVal)
+        : {}
+      return userPoseMap
+    } catch (error) {
+      console.error(error)
+      return {}
+    }
   }
 
   private get blinkValue() {
@@ -224,13 +314,15 @@ class VrmManager {
       this._vrm.lookAt!.target = this._pCamera
       this._vrm.lookAt!.autoUpdate = this._lookAtCamera
       this._mixer = new THREE.AnimationMixer(this._vrm.scene)
-      this.setPresetPoses(pose || this._currentPoseKey)
 
       this._basePosition.copy(
         vrm.humanoid!.getBoneNode(VRMSchema.HumanoidBoneName.Hips)!.position,
       )
 
-      this.playWaitingAnimation()
+      this.setPose(pose || this._currentPoseId)
+      if (this._waitingActivated) {
+        this.playWaitingAnimation()
+      }
 
       Object.entries(this._currentBlendShapeWeightMap).forEach(
         ([name, weight]) => {
@@ -266,16 +358,29 @@ class VrmManager {
 
   /**
    * 定義されたポーズをモデルに反映する
-   * @param {PresetPoses} poseName
+   * @param {PresetPoses} id
    * @memberof VrmManager
    */
-  setPresetPoses(poseName: PresetPoses) {
-    const pose = presetPosesMap[poseName]
-    if (!pose) return
+  setPose(id: PresetPoses | string) {
+    let pose = VrmManager.presetPosesMap[id as PresetPoses]
+    if (!pose) {
+      // プリセットになかった場合localStorage参照
+      pose = VrmManager.userPosesMap[id]
+    }
+    if (!pose) {
+      // localStorageにもなかった場合何もしない
+      return
+    }
     this._mixer.stopAllAction()
-    this._currentPoseKey = poseName
+    this._currentPoseId = id
     this._vrm.humanoid?.setPose(pose.data)
-    if (this._waitingActivated) this.playWaitingAnimation()
+    if (
+      this._waitingActivated &&
+      !this._boneControlling &&
+      !this._bodyControls
+    ) {
+      this.playWaitingAnimation()
+    }
   }
 
   /**
@@ -339,44 +444,43 @@ class VrmManager {
    * @memberof VrmManager
    */
   private playWaitingAnimation() {
-    const bones: THREE.Bone[] = [
-      VRMSchema.HumanoidBoneName.Neck,
-      VRMSchema.HumanoidBoneName.Chest,
-      VRMSchema.HumanoidBoneName.RightShoulder,
-      VRMSchema.HumanoidBoneName.RightUpperArm,
-      VRMSchema.HumanoidBoneName.LeftShoulder,
-      VRMSchema.HumanoidBoneName.LeftUpperArm,
-      VRMSchema.HumanoidBoneName.Hips,
-      VRMSchema.HumanoidBoneName.RightUpperLeg,
-      VRMSchema.HumanoidBoneName.LeftUpperLeg,
-    ].map(boneName => {
-      return this._vrm.humanoid?.getBoneNode(boneName)! as THREE.Bone
-    })
-    const clip = THREE.AnimationClip.parseAnimation(
-      {
-        hierarchy: [
-          getWaitingAnimation(bones[0], Axis.x),
-          getWaitingAnimation(bones[1], Axis.x),
-          getWaitingAnimation(bones[2], Axis.z),
-          getWaitingAnimation(bones[3], Axis.z, true),
-          getWaitingAnimation(bones[4], Axis.z, true),
-          getWaitingAnimation(bones[5], Axis.z),
-          getWaitingAnimation(bones[6], Axis.x, true),
-          getWaitingAnimation(bones[7], Axis.x),
-          getWaitingAnimation(bones[8], Axis.x),
-        ],
-      },
-      bones,
-    )
-    clip.tracks.forEach(track => {
-      track.name = track.name.replace(
-        /^\.bones\[([^\]]+)\].(position|quaternion|scale)$/,
-        '$1.$2',
+    if (!this._boneControlling && !this._bodyControls) {
+      const bones: THREE.Bone[] = [
+        VRMSchema.HumanoidBoneName.Neck,
+        VRMSchema.HumanoidBoneName.Chest,
+        VRMSchema.HumanoidBoneName.Spine,
+        VRMSchema.HumanoidBoneName.RightShoulder,
+        VRMSchema.HumanoidBoneName.RightUpperArm,
+        VRMSchema.HumanoidBoneName.LeftShoulder,
+        VRMSchema.HumanoidBoneName.LeftUpperArm,
+      ].map(boneName => {
+        return this._vrm.humanoid?.getBoneNode(boneName)! as THREE.Bone
+      })
+      let index = 0
+      const clip = THREE.AnimationClip.parseAnimation(
+        {
+          hierarchy: [
+            getWaitingAnimation(bones[index++], Axis.x),
+            getWaitingAnimation(bones[index++], Axis.x),
+            getWaitingAnimation(bones[index++], Axis.x, true),
+            getWaitingAnimation(bones[index++], Axis.z),
+            getWaitingAnimation(bones[index++], Axis.z, true),
+            getWaitingAnimation(bones[index++], Axis.z, true),
+            getWaitingAnimation(bones[index++], Axis.z),
+          ],
+        },
+        bones,
       )
-    })
-    this._mixer = new THREE.AnimationMixer(this._vrm.scene)
-    this._waitingAnimation = this._mixer.clipAction(clip)
-    this._waitingAnimation.play()
+      clip.tracks.forEach(track => {
+        track.name = track.name.replace(
+          /^\.bones\[([^\]]+)\].(position|quaternion|scale)$/,
+          '$1.$2',
+        )
+      })
+      this._mixer = new THREE.AnimationMixer(this._vrm.scene)
+      this._waitingAnimation = this._mixer.clipAction(clip)
+      this._waitingAnimation.play()
+    }
     this._waitingActivated = true
   }
 
@@ -387,6 +491,251 @@ class VrmManager {
   private stopWaitingAnimation() {
     this._waitingAnimation?.stop()
     this._waitingActivated = false
+  }
+  /**
+   * ボーンコントロールを有効にする
+   * @memberof VrmManager
+   */
+  activateBoneControls() {
+    if (this._waitingActivated) {
+      this._waitingAnimation?.stop()
+    }
+
+    this._boneControlling = true
+
+    if (Object.values(this._boneControlsMap).length) {
+      return
+    }
+
+    controlableBoneNameArray.forEach(boneName => {
+      const transformControls = new TransformControls(
+        this._pCamera,
+        this._containerElem,
+      )
+      transformControls.setMode('rotate')
+      transformControls.setSpace('local')
+      transformControls.setSize(BONE_CONTROLS_SIZE.SM)
+      // マニュピレータータップ時
+      transformControls.addEventListener('mouseDown', e => {
+        if (!this._activatingBoneName) {
+          // if (this._activatingBoneName) {
+          //   const activatingBoneControls = this._boneControlsMap[
+          //     this._activatingBoneName
+          //   ]
+          //   activatingBoneControls.setSize(BONE_CONTROLS_SIZE.SM)
+          // }
+          this._activatingBoneName = boneName
+          transformControls.setSize(BONE_CONTROLS_SIZE.DEFAULT)
+          controlableBoneNameArray.forEach(b => {
+            if (b !== boneName) {
+              const boneControls = this._boneControlsMap[b]
+              boneControls.showX = false
+              boneControls.showY = false
+              boneControls.showZ = false
+            }
+          })
+        }
+      })
+      transformControls.addEventListener('mouseUp', e => {
+        this._boneManipulatorTapped = true
+      })
+      // マニュピレーター操作時にカメラ操作を止める
+      transformControls.addEventListener('dragging-changed', event => {
+        this._orbitControls.enabled = !event.value
+      })
+      transformControls.attach(this._vrm.humanoid?.getBoneNode(boneName)!)
+      this._scene.add(transformControls)
+      this._boneControlsMap[boneName] = transformControls
+    })
+  }
+
+  /**
+   * ボーンコントロールを無効にする
+   * @memberof VrmManager
+   */
+  deactivateBoneControls() {
+    Object.entries(this._boneControlsMap).forEach(
+      ([poseId, transformControls]) => {
+        transformControls.detach()
+        transformControls.dispose()
+        delete this._boneControlsMap[poseId as VRMSchema.HumanoidBoneName]
+      },
+    )
+    this._activatingBoneName = null
+    this._boneControlling = false
+    if (this._waitingActivated) {
+      this.playWaitingAnimation()
+    }
+  }
+
+  /**
+   * ボーンコントロールのマニュピレーター表示をリセットする
+   * @memberof VrmManager
+   */
+  resetBoneControlsManipulator() {
+    Object.values(this._boneControlsMap).forEach(boneControls => {
+      boneControls.setSize(BONE_CONTROLS_SIZE.SM)
+      boneControls.showX = true
+      boneControls.showY = true
+      boneControls.showZ = true
+    })
+    this._activatingBoneName = null
+  }
+  /**
+   * ボーンコントロールのマニュピレーターを表示する
+   * @memberof VrmManager
+   */
+  showBoneControlsManipulator() {
+    Object.values(this._boneControlsMap).forEach(boneControls => {
+      boneControls.showX = true
+      boneControls.showY = true
+      boneControls.showZ = true
+    })
+    this._boneControlsHidden = false
+  }
+  /**
+   * ボーンコントロールのマニュピレーターを非表示にする
+   * @memberof VrmManager
+   */
+  hideBoneControlsManipulator() {
+    Object.values(this._boneControlsMap).forEach(boneControls => {
+      boneControls.showX = false
+      boneControls.showY = false
+      boneControls.showZ = false
+    })
+    this._boneControlsHidden = true
+  }
+
+  /**
+   * ボディのコントロールを有効にする
+   * @memberof VrmManager
+   */
+  activateBodyControls() {
+    if (this._waitingActivated) {
+      this._waitingAnimation?.stop()
+    }
+    if (!this._bodyControls) {
+      const transformControls = new TransformControls(
+        this._pCamera,
+        this._containerElem,
+      )
+      transformControls.setMode('translate')
+      transformControls.setSpace('global')
+      transformControls.setSize(BONE_CONTROLS_SIZE.DEFAULT)
+      // マニュピレーター操作時にカメラ操作を止める
+      transformControls.addEventListener('dragging-changed', event => {
+        this._orbitControls.enabled = !event.value
+      })
+      transformControls.attach(
+        this._vrm.humanoid?.getBoneNode(VRMSchema.HumanoidBoneName.Hips)!,
+      )
+      this._scene.add(transformControls)
+      this._bodyControls = transformControls
+    }
+  }
+  /**
+   * ボディコントロールを無効にする
+   * @memberof VrmManager
+   */
+  deactivateBodyControls() {
+    if (!this._bodyControls) return
+    this._bodyControls.detach()
+    this._bodyControls.dispose()
+    this._bodyControls = null
+    if (this._waitingActivated) {
+      this.playWaitingAnimation()
+    }
+  }
+  /**
+   * ボディコントロールのマニュピレーターを表示する
+   * @memberof VrmManager
+   */
+  showBodyControlsManipulator() {
+    if (!this._bodyControls) return
+    this._bodyControls.showX = true
+    this._bodyControls.showY = true
+    this._bodyControls.showZ = true
+  }
+  /**
+   * ボディコントロールのマニュピレーターを非表示にする
+   * @memberof VrmManager
+   */
+  hideBodyControlsManipulator() {
+    if (!this._bodyControls) return
+    this._bodyControls.showX = false
+    this._bodyControls.showY = false
+    this._bodyControls.showZ = false
+  }
+
+  /**
+   * ポーズデータを保存する
+   * @param {string} poseName
+   * @param {string} [poseId]
+   * @memberof VrmManager
+   */
+  savePoseData(poseName: string, poseId?: string) {
+    try {
+      const tempPoseData = this._vrm.humanoid?.getPose()
+      if (!tempPoseData) throw new Error('Failed to get pose. ')
+      const currentPoseData: VRMPose = {}
+      // getPoseしたデータの内rotationのみ抽出
+      Object.entries(tempPoseData).forEach(([key, value]) => {
+        if (value) {
+          const poseTransform: VRMPoseTransform = { rotation: value.rotation }
+          if (key === VRMSchema.HumanoidBoneName.Hips) {
+            // Hipsのみモデルの基準となるのでpositionを拾う
+            const hipsPosVector3 = new Vector3().fromArray(
+              value.position || [0, 0, 0],
+            )
+            const relativePosVector3 = hipsPosVector3.sub(this._basePosition)
+            poseTransform.position = relativePosVector3.toArray() as RawVector3
+          }
+          currentPoseData[key] = poseTransform
+        }
+      })
+      const currentUserPosesMap: UserPosesMap = JSON.parse(
+        localStorage.getItem('poses') || '{}',
+      )
+      const name =
+        poseName || `ポーズ ${Object.keys(currentUserPosesMap).length + 1}`
+      const id = poseId || generateUuid()
+      const poseData: PosesData = {
+        id,
+        name,
+        data: currentPoseData,
+      }
+      const modifiedUserPosesMap = {
+        ...currentUserPosesMap,
+        [id]: poseData,
+      }
+      localStorage.setItem('poses', JSON.stringify(modifiedUserPosesMap))
+      return { succeed: true, id }
+    } catch (error) {
+      if (error.name === 'QuotaExceededError') {
+        return { succeed: false, error: '保存可能容量を超えています。' }
+      }
+      console.error(error)
+      return { succeed: false, error: '保存に失敗しました。' }
+    }
+  }
+
+  /**
+   * ポーズデータを削除する
+   * @param {string} poseId
+   * @memberof VrmManager
+   */
+  deletePoseData(poseId: string) {
+    try {
+      const userPosesMap: UserPosesMap = JSON.parse(
+        localStorage.getItem('poses') || '{}',
+      )
+      delete userPosesMap[poseId]
+      localStorage.setItem('poses', JSON.stringify(userPosesMap))
+      return { succeed: true }
+    } catch (error) {
+      console.error(error)
+      return { succeed: false, error: '削除に失敗しました。' }
+    }
   }
 
   /**

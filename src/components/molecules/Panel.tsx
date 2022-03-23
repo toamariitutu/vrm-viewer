@@ -5,6 +5,7 @@ import React, {
   useRef,
   useImperativeHandle,
   useState,
+  useCallback,
 } from 'react'
 import TabPanel from 'components/atoms/TabPanel'
 import TabContent from 'components/atoms/TabContent'
@@ -33,6 +34,7 @@ const Panel = forwardRef<ImperativeHandle, Props>(
     const [isOpen, open] = useState(false)
     // パネル内コンテンツの表示状態
     const [isShown, show] = useState(false)
+
     // modeが変更時にスクロール位置を復元
     useEffect(() => {
       if (currentMode) {
@@ -69,6 +71,14 @@ const Panel = forwardRef<ImperativeHandle, Props>(
       }),
       [],
     )
+
+    const scrollToBottom = useCallback(() => {
+      if (panelElemRef.current) {
+        const bottom =
+          panelElemRef.current.scrollHeight - panelElemRef.current.clientHeight
+        panelElemRef.current.scroll(0, bottom)
+      }
+    }, [])
     return (
       <div className={`${styles.container} ${isOpen ? 'open' : ''}`}>
         <div ref={panelElemRef} className={styles.panel}>
@@ -83,7 +93,7 @@ const Panel = forwardRef<ImperativeHandle, Props>(
               <FaceControls />
             </TabContent>
             <TabContent key={MenuMode.Pose}>
-              <PoseListControls />
+              <PoseListControls scrollToBottom={scrollToBottom} />
             </TabContent>
             <TabContent key={MenuMode.Model}>
               <ModelControls />

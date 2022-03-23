@@ -101,6 +101,20 @@ input, select {
   vertical-align:middle;
   outline: 0;
 }
+input {
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  outline: none;
+  background: none;
+  -moz-appearance: none;
+  -webkit-appearance: none;
+  appearance: none;
+  font-family: inherit;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
 
 button {
   padding: 0;
