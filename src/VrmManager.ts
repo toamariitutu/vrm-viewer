@@ -543,7 +543,9 @@ class VrmManager {
       transformControls.addEventListener('dragging-changed', event => {
         this._orbitControls.enabled = !event.value
       })
-      transformControls.attach(this._vrm.humanoid?.getBoneNode(boneName)!)
+      if (this._vrm.humanoid?.getBoneNode(boneName)) {
+        transformControls.attach(this._vrm.humanoid?.getBoneNode(boneName)!)
+      }
       this._scene.add(transformControls)
       this._boneControlsMap[boneName] = transformControls
     })
